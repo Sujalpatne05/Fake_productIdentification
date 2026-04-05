@@ -38,8 +38,6 @@ App = {
     registerProduct: function(event) {
         event.preventDefault();
 
-        var productInstance;
-
         var sellerName = document.getElementById('SellerName').value;
         var sellerBrand = document.getElementById('SellerBrand').value;
         var sellerCode = document.getElementById('SellerCode').value;
@@ -47,31 +45,47 @@ App = {
         var sellerManager = document.getElementById('SellerManager').value;
         var sellerAddress = document.getElementById('SellerAddress').value;
         var ManufacturerId = document.getElementById('ManufacturerId').value;
-       
-        
-        //window.ethereum.enable();
-        web3.eth.getAccounts(function(error,accounts){
 
-            if(error) {
-                console.log(error);
+        if (!sellerName || !sellerBrand || !sellerCode || !sellerPhoneNumber || !sellerManager || !sellerAddress || !ManufacturerId) {
+            alert('Please fill in all fields');
+            return;
+        }
+
+        // Call backend API instead of smart contract directly
+        fetch('http://localhost:5000/api/seller/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-role': 'manufacturer'
+            },
+            body: JSON.stringify({
+                _manufacturerId: ManufacturerId,
+                _sellerName: sellerName,
+                _sellerBrand: sellerBrand,
+                _sellerCode: sellerCode,
+                _sellerNum: parseInt(sellerPhoneNumber),
+                _sellerManager: sellerManager,
+                _sellerAddress: sellerAddress
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Seller added successfully!');
+                document.getElementById('SellerName').value='';
+                document.getElementById('SellerBrand').value='';
+                document.getElementById('SellerCode').value='';
+                document.getElementById('SellerPhoneNumber').value='';
+                document.getElementById('SellerManager').value='';
+                document.getElementById('SellerAddress').value='';
+                document.getElementById('ManufacturerId').value='';
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
             }
-
-            console.log(accounts);
-            var account=accounts[0];
-            // console.log(account);
-
-            App.contracts.product.deployed().then(function(instance){
-                productInstance=instance;
-                return productInstance.addSeller(web3.fromAscii(ManufacturerId),web3.fromAscii(sellerName),web3.fromAscii(sellerBrand), web3.fromAscii(sellerCode), sellerPhoneNumber, web3.fromAscii(sellerManager), web3.fromAscii(sellerAddress), {from:account});
-             }).then(function(result){
-                console.log(result);
-                window.location.reload();
-                document.getElementById('sellerName').innerHTML='';
-                document.getElementById('sellerBrand').innerHTML='';
-
-            }).catch(function(err){
-                console.log(err.message);
-            });
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            console.error(err);
         });
     }
 };

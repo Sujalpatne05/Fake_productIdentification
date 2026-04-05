@@ -205,27 +205,45 @@
     return;
   }
 
-  // ✅ OLD DATA LOAD KARO
-  let sellers = JSON.parse(localStorage.getItem('sellers')) || [];
-
-  // ✅ NEW SELLER ADD KARO (overwrite nahi)
-  sellers.push({
-    name,
-    brand,
-    code,
-    phone,
-    manager,
-    addr,
-    mfgId
+  // Call backend API instead of localStorage
+  fetch('http://localhost:5000/api/seller/add', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-role': 'manufacturer'
+    },
+    body: JSON.stringify({
+      _manufacturerId: mfgId,
+      _sellerName: name,
+      _sellerBrand: brand,
+      _sellerCode: code,
+      _sellerNum: parseInt(phone),
+      _sellerManager: manager,
+      _sellerAddress: addr
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      toast('Seller added successfully ✅', 'success');
+      document.getElementById('generatedCode').textContent = code;
+      document.getElementById('successBox').classList.add('show');
+      
+      // Clear form after 2 seconds
+      setTimeout(() => {
+        ['sellerName','sellerBrand','sellerCode','sellerPhone','sellerManager','manufacturerId','sellerAddress'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('successBox').classList.remove('show');
+      }, 2000);
+    } else {
+      toast('Error: ' + (data.error || 'Unknown error'), 'error');
+    }
+  })
+  .catch(err => {
+    toast('Error: ' + err.message, 'error');
+    console.error(err);
   });
-
-  // ✅ SAVE BACK
-  localStorage.setItem('sellers', JSON.stringify(sellers));
-
-  toast('Seller added successfully ✅', 'success');
-
-  document.getElementById('generatedCode').textContent = code;
-  document.getElementById('successBox').classList.add('show');
 }
   </script>
 </body>

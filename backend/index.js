@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const Web3 = require('web3').Web3;
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 
@@ -9,129 +11,15 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Update this with your local or testnet node
-const web3 = new Web3('http://127.0.0.1:8545'); // Ganache running on 8545
+// Load blockchain config
+const { web3, contractInstance } = require('./config/blockchain');
 
-// Example: Load contract ABI and address
-const contractAddress = '0x77d8A7c88572419b20468675320dF7CaDf46a5BD';
-const contractABI = [
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "name": "productItems",
-    "outputs": [
-      { "internalType": "uint256", "name": "productId", "type": "uint256" },
-      { "internalType": "bytes32", "name": "productSN", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "productName", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "productBrand", "type": "bytes32" },
-      { "internalType": "uint256", "name": "productPrice", "type": "uint256" },
-      { "internalType": "bytes32", "name": "productStatus", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "name": "productMap",
-    "outputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "name": "productsForSale",
-    "outputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "name": "productsManufactured",
-    "outputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "name": "productsSold",
-    "outputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "name": "productsWithConsumer",
-    "outputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" },
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "name": "productsWithSeller",
-    "outputs": [
-      { "internalType": "bytes32", "name": "", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  {
-    "inputs": [
-      { "internalType": "uint256", "name": "", "type": "uint256" }
-    ],
-    "name": "sellers",
-    "outputs": [
-      { "internalType": "uint256", "name": "sellerId", "type": "uint256" },
-      { "internalType": "bytes32", "name": "sellerName", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "sellerBrand", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "sellerCode", "type": "bytes32" },
-      { "internalType": "uint256", "name": "sellerNum", "type": "uint256" },
-      { "internalType": "bytes32", "name": "sellerManager", "type": "bytes32" },
-      { "internalType": "bytes32", "name": "sellerAddress", "type": "bytes32" }
-    ],
-    "stateMutability": "view",
-    "type": "function",
-    "constant": true
-  },
-  // ... (rest of ABI omitted for brevity)
-];
-const productContract = new web3.eth.Contract(contractABI, contractAddress);
+console.log('Backend initialized with blockchain config');
 
 // Middleware to inject web3 and contract into req
 app.use((req, res, next) => {
   req.web3 = web3;
-  req.contract = productContract;
+  req.contract = contractInstance;
   next();
 });
 

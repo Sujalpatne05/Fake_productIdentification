@@ -144,47 +144,79 @@
     let allSellers = [];
 
     async function getSellers() {
-  const code = document.getElementById('mfgCode').value.trim();
+      const code = document.getElementById('mfgCode').value.trim();
 
-  if (!code) {
-    toast('Enter a manufacturer code.', 'error');
-    return;
-  }
+      if (!code) {
+        toast('Enter a manufacturer code.', 'error');
+        return;
+      }
 
-  // 👉 Get from localStorage
-  let sellers = JSON.parse(localStorage.getItem('sellers')) || [];
+      const btn = document.getElementById('fetchBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
 
-  // 👉 Filter by manufacturer ID
-  let filtered = sellers.filter(s => s.mfgId === code);
+      try {
+        // Call backend API to query sellers from blockchain
+        const res = await fetch(`http://localhost:5000/api/manufacturer/sellers/${code}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-role': 'manufacturer'
+          }
+        });
 
-  renderSellersDirect(filtered);
+        const data = await res.json();
 
-  toast(`Found ${filtered.length} seller(s).`, 'success');
-}
+        if (!res.ok) {
+          toast('Error: ' + (data.error || 'Failed to fetch sellers'), 'error');
+          btn.classList.remove('loading');
+          btn.disabled = false;
+          return;
+        }
 
-    function renderSellersDirect(sellers) {
+        // Data should be an array of sellers
+        renderSellers(data);
+        toast(`Found ${data.length || 0} seller(s).`, 'success');
+      } catch (err) {
+        toast('Error: ' + err.message, 'error');
+        console.error(err);
+      }
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+
+function renderSellers(sellers) {
+      // Parse contract response - sellers is an array from blockchain
       const tbody = document.getElementById('sellersBody');
+      
       if (!sellers || sellers.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">No Sellers Found</div><div class="empty-sub">No sellers registered under this manufacturer code.</div></div></td></tr>`;
         return;
       }
-      tbody.innerHTML = sellers.map((s, index) => `
-  <tr>
-    <td>${index + 1}</td>
-    <td>${s.name}</td>
-    <td>${s.brand}</td>
-    <td><code style="color:var(--accent)">${s.code}</code></td>
-    <td>${s.phone}</td>
-    <td>${s.manager}</td>
-    <td>${s.addr}</td>
-  </tr>
-`).join('');
-    }
 
-    function renderSellers(sellers) {
-      // Parse contract response
-      allSellers = Array.isArray(sellers) ? sellers : [];
-      renderSellersDirect(allSellers);
+      // Convert bytes32 to string for display
+      const hexToString = (hex) => {
+        if (!hex) return '';
+        try {
+          return hex.replace(/0x/, '').match(/.{1,2}/g).map(x => String.fromCharCode(parseInt(x, 16))).join('').replace(/\0/g, '');
+        } catch (e) {
+          return hex;
+        }
+      };
+
+      allSellers = sellers;
+      tbody.innerHTML = sellers.map((s, index) => `
+        <tr>
+          <td>${s.sellerId || index + 1}</td>
+          <td>${hexToString(s.sellerName) || s.sellerName || '-'}</td>
+          <td>${hexToString(s.sellerBrand) || s.sellerBrand || '-'}</td>
+          <td><code style="color:var(--accent)">${hexToString(s.sellerCode) || s.sellerCode || '-'}</code></td>
+          <td>${s.sellerNum || '-'}</td>
+          <td>${hexToString(s.sellerManager) || s.sellerManager || '-'}</td>
+          <td>${hexToString(s.sellerAddress) || s.sellerAddress || '-'}</td>
+        </tr>
+      `).join('');
     }
 
     function filterTable() {

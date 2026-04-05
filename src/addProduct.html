@@ -70,6 +70,74 @@
     .wallet-bar .addr  { font-family: monospace; color: var(--accent); font-size: 0.8rem; }
     .wallet-status     { display: flex; align-items: center; gap: 0.5rem; }
     .wallet-dot        { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+    .products-list {
+      display: none;
+      margin-top: 2rem;
+    }
+    .products-list.show { display: block; }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .product-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      transition: all 0.2s;
+    }
+    .product-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(0,229,160,0.1);
+    }
+    .product-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 0.8rem;
+    }
+    .product-sn {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .product-badge {
+      font-size: 0.7rem;
+      background: rgba(0,229,160,0.15);
+      color: var(--accent);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .product-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+    }
+    .product-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .product-info-label {
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .product-info-value {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .product-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 2rem 1rem;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
@@ -160,6 +228,15 @@
         <button class="btn btn-success" onclick="downloadQR()">⬇ Download QR</button>
         <button class="btn btn-outline" onclick="printQR()">🖨 Print</button>
       </div>
+    </div>
+
+    <!-- Recently Added Products -->
+    <div class="card products-list" id="productsList">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div class="card-title" style="margin:0;">📦 Recently Added Products</div>
+        <button class="btn btn-outline" style="font-size:0.75rem;padding:0.3rem 0.8rem;" onclick="clearProductsList()">Clear</button>
+      </div>
+      <div class="products-grid" id="productsGrid"></div>
     </div>
 
     <!-- About Section -->
@@ -259,6 +336,7 @@
     }
 
     toast('Product added to blockchain! 🎉', 'success');
+    addToRecentProducts(sn, name, brand, price, mfgId);
     showQR(sn, name);
 
   } catch (err) {
@@ -277,8 +355,9 @@
       box.innerHTML = '';
 
       // ── FIX 2: QRCode renders into a DIV, not a canvas ──
+      // Store only product SN in QR (consumer code not known at product creation time)
       new QRCode(box, {
-        text:         JSON.stringify({ sn, name, timestamp: Date.now(), chain: 'ethereum' }),
+        text:         sn,
         width:        200,
         height:       200,
         colorDark:   '#000000',
@@ -317,6 +396,94 @@
     }
 
     function printQR() { window.print(); }
+
+    // ─── Recently Added Products ──────────────────────────────────────────────
+    let recentProducts = [];
+
+    function loadRecentProducts() {
+      const stored = localStorage.getItem('recentProducts');
+      if (stored) {
+        try {
+          recentProducts = JSON.parse(stored);
+        } catch (e) {
+          recentProducts = [];
+        }
+      }
+      renderRecentProducts();
+    }
+
+    function addToRecentProducts(sn, name, brand, price, mfgId) {
+      const product = {
+        sn,
+        name,
+        brand,
+        price,
+        mfgId,
+        timestamp: new Date().toLocaleTimeString('en-IN'),
+        date: new Date().toLocaleDateString('en-IN')
+      };
+      
+      recentProducts.unshift(product);
+      if (recentProducts.length > 10) recentProducts.pop();
+      
+      // Save to localStorage
+      localStorage.setItem('recentProducts', JSON.stringify(recentProducts));
+      renderRecentProducts();
+    }
+
+    function renderRecentProducts() {
+      const grid = document.getElementById('productsGrid');
+      const list = document.getElementById('productsList');
+      
+      if (recentProducts.length === 0) {
+        list.classList.remove('show');
+        return;
+      }
+      
+      list.classList.add('show');
+      grid.innerHTML = recentProducts.map((p, idx) => `
+        <div class="product-card">
+          <div class="product-card-header">
+            <div class="product-sn">${p.sn}</div>
+            <div class="product-badge">✓ Added</div>
+          </div>
+          <div class="product-info">
+            <div class="product-info-row">
+              <span class="product-info-label">Product:</span>
+              <span class="product-info-value">${p.name}</span>
+            </div>
+            <div class="product-info-row">
+              <span class="product-info-label">Brand:</span>
+              <span class="product-info-value">${p.brand}</span>
+            </div>
+            <div class="product-info-row">
+              <span class="product-info-label">Price:</span>
+              <span class="product-info-value">₹${p.price}</span>
+            </div>
+            <div class="product-info-row">
+              <span class="product-info-label">MFG ID:</span>
+              <span class="product-info-value">${p.mfgId}</span>
+            </div>
+            <div class="product-info-row" style="margin-top:0.4rem;padding-top:0.6rem;border-top:1px solid var(--border);">
+              <span class="product-info-label">Added:</span>
+              <span class="product-info-value" style="font-size:0.75rem;">${p.date} ${p.timestamp}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function clearProductsList() {
+      recentProducts = [];
+      localStorage.removeItem('recentProducts');
+      document.getElementById('productsList').classList.remove('show');
+      toast('Recent products cleared!', 'success');
+    }
+
+    // Load products on page load
+    window.addEventListener('load', () => {
+      loadRecentProducts();
+    });
   </script>
 </body>
 </html>

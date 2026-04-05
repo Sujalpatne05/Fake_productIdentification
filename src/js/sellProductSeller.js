@@ -63,7 +63,6 @@ App = {
     registerProduct: function(event) {
         if (event) event.preventDefault();
 
-        var productInstance;
         var productSN = document.getElementById('productSN').value;
         var consumerCode = document.getElementById('consumerCode').value;
 
@@ -72,28 +71,31 @@ App = {
             return;
         }
 
-        web3.eth.getAccounts(function(error, accounts) {
-            if (error) {
-                console.log(error);
-                alert('Error fetching accounts');
-                return;
+        // Call backend API instead of smart contract directly
+        fetch('http://localhost:5000/api/seller/sell', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-role': 'seller'
+            },
+            body: JSON.stringify({
+                _productSN: productSN,
+                _consumerCode: consumerCode
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product sold to consumer successfully!');
+                document.getElementById('productSN').value='';
+                document.getElementById('consumerCode').value='';
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
             }
-            if (!accounts || !accounts.length) {
-                alert('No accounts found. Please unlock MetaMask.');
-                return;
-            }
-            var account = accounts[0];
-            App.contracts.product.deployed().then(function(instance) {
-                productInstance = instance;
-                return productInstance.sellerSellProduct(web3.fromAscii(productSN), web3.fromAscii(consumerCode), { from: account });
-            }).then(function(result) {
-                window.location.reload();
-                document.getElementById('sellerName').innerHTML = '';
-                document.getElementById('sellerBrand').innerHTML = '';
-            }).catch(function(err) {
-                console.log(err.message);
-                alert('Blockchain transaction failed: ' + err.message);
-            });
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            console.error(err);
         });
     }
 };

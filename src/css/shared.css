@@ -167,6 +167,7 @@ nav.main-nav {
 .ab-green .ab-icon { background: rgba(0,229,160,0.12); }
 .ab-red .ab-icon { background: rgba(255,107,107,0.12); }
 .ab-blue .ab-icon { background: rgba(100,180,255,0.12); }
+.ab-purple .ab-icon { background: rgba(124,92,252,0.15); }
 .action-btn .ab-text { font-weight: 500; font-size: 0.95rem; }
 .action-btn .ab-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
 

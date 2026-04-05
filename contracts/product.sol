@@ -204,11 +204,22 @@ contract product {
     //Verify
 
     function verifyProduct(bytes32 _productSN, bytes32 _consumerCode) public view returns(bool){
-        if(productsSold[_productSN] == _consumerCode){
-            return true;
+        // Check if product exists
+        if(productsManufactured[_productSN] == bytes32(0)) {
+            return false; // Product not registered by manufacturer
         }
-        else{
-            return false;
+        
+        // Check if product was transferred to a seller
+        if(productsForSale[_productSN] == bytes32(0)) {
+            return false; // Product not transferred to seller
         }
+        
+        // Check if product was sold to this consumer
+        if(productsSold[_productSN] != _consumerCode) {
+            return false; // Product not sold to this consumer
+        }
+        
+        // All checks passed - product is genuine
+        return true;
     }
 }

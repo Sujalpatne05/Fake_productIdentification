@@ -38,40 +38,48 @@ App = {
     registerProduct: function(event) {
         event.preventDefault();
 
-        var productInstance;
-
         var manufacturerID = document.getElementById('manufacturerID').value;
         var productName = document.getElementById('productName').value;
         var productSN = document.getElementById('productSN').value;
         var productBrand = document.getElementById('productBrand').value;
         var productPrice = document.getElementById('productPrice').value;
 
-        //window.ethereum.enable();
-        web3.eth.getAccounts(function(error,accounts){
+        if (!manufacturerID || !productName || !productSN || !productBrand || !productPrice) {
+            alert('Please fill in all fields');
+            return;
+        }
 
-            if(error) {
-                console.log(error);
-            }
-
-            console.log(accounts);
-            var account=accounts[0];
-            // console.log(account);
-
-            App.contracts.product.deployed().then(function(instance){
-                productInstance=instance;
-                return productInstance.addProduct(web3.fromAscii(manufacturerID),web3.fromAscii(productName), web3.fromAscii(productSN), web3.fromAscii(productBrand), productPrice, {from:account});
-             }).then(function(result){
-                // console.log(result);
-
+        // Call backend API instead of smart contract directly
+        fetch('http://localhost:5000/api/product/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-role': 'manufacturer'
+            },
+            body: JSON.stringify({
+                _manufacturerID: manufacturerID,
+                _productName: productName,
+                _productSN: productSN,
+                _productBrand: productBrand,
+                _productPrice: parseInt(productPrice)
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert('Product added successfully!');
                 document.getElementById('manufacturerID').value='';
                 document.getElementById('productName').value='';
                 document.getElementById('productSN').value='';
                 document.getElementById('productBrand').value='';
                 document.getElementById('productPrice').value='';
-
-            }).catch(function(err){
-                console.log(err.message);
-            });
+            } else {
+                alert('Error: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(err => {
+            alert('Error: ' + err.message);
+            console.error(err);
         });
     }
 
