@@ -186,6 +186,13 @@
         <span style="font-size:0.82rem;color:var(--muted);">or enter manually below</span>
       </div>
 
+      <!-- QR Upload -->
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;margin-bottom:0.5rem;font-size:0.85rem;font-weight:600;color:var(--muted);">Upload QR Code Image</label>
+        <input type="file" id="qrUpload" accept="image/*" onchange="handleQRUpload(event)" style="display:block;width:100%;padding:0.75rem;border:1px dashed var(--border);border-radius:10px;background:var(--surface2);color:var(--text);cursor:pointer;" />
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.3rem;">📤 Or upload a QR code image to scan</div>
+      </div>
+
       <div class="scanner-box-sm" id="scannerBox">
         <video id="video" autoplay playsinline muted></video>
         <div class="scan-overlay-sm">
@@ -335,6 +342,44 @@
     const video = document.getElementById('video');
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
+
+    // Handle QR Image Upload
+    async function handleQRUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const uploadCanvas = document.createElement('canvas');
+          uploadCanvas.width = img.width;
+          uploadCanvas.height = img.height;
+          const uploadCtx = uploadCanvas.getContext('2d');
+          uploadCtx.drawImage(img, 0, 0);
+
+          try {
+            const imageData = uploadCtx.getImageData(0, 0, uploadCanvas.width, uploadCanvas.height);
+            if (window.jsQR) {
+              const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'dontInvert'
+              });
+
+              if (code && code.data) {
+                document.getElementById('productSN').value = code.data.trim();
+                toast('QR detected from image: ' + code.data, 'success');
+              } else {
+                toast('No QR code found in image. Try another image.', 'error');
+              }
+            }
+          } catch (err) {
+            toast('Error processing image: ' + err.message, 'error');
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
 
     function scanTick() {
       if (scannerOpen && video.readyState === video.HAVE_ENOUGH_DATA) {

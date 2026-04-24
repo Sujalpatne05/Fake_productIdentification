@@ -1,7 +1,7 @@
 {
   "name": "fake-product-identification",
   "version": "1.0.0",
-  "description": "project on blockchain",
+  "description": "Fake Product Identification using Blockchain - ChainVerify",
   "main": "index.js",
   "scripts": {
     "dev": "lite-server",
