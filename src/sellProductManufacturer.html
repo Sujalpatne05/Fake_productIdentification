@@ -366,8 +366,9 @@
               });
 
               if (code && code.data) {
-                document.getElementById('productSN').value = code.data.trim();
-                toast('QR detected from image: ' + code.data, 'success');
+                const sn = code.data.trim();
+                document.getElementById('productSN').value = sn;
+                toast('QR detected! SN: ' + sn, 'success');
               } else {
                 toast('No QR code found in image. Try another image.', 'error');
               }
