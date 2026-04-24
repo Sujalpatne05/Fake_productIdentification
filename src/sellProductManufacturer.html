@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/shared.css">
   <!-- jsQR library for QR code scanning -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     .blob { position: fixed; border-radius: 50%; filter: blur(130px); opacity: 0.1; pointer-events: none; z-index: 0; }
     .blob-1 { width: 450px; height: 450px; background: #7c5cfc; top: -100px; right: -80px; }
@@ -345,13 +345,16 @@
 
     // Handle QR Image Upload
     async function handleQRUpload(event) {
+      console.log('handleQRUpload called');
       const file = event.target.files[0];
-      if (!file) return;
+      if (!file) { console.log('No file selected'); return; }
 
       const reader = new FileReader();
       reader.onload = async (e) => {
+        console.log('File loaded');
         const img = new Image();
         img.onload = () => {
+          console.log('Image loaded');
           const uploadCanvas = document.createElement('canvas');
           uploadCanvas.width = img.width;
           uploadCanvas.height = img.height;
@@ -360,20 +363,27 @@
 
           try {
             const imageData = uploadCtx.getImageData(0, 0, uploadCanvas.width, uploadCanvas.height);
+            console.log('jsQR available:', window.jsQR ? 'yes' : 'no');
             if (window.jsQR) {
               const code = jsQR(imageData.data, imageData.width, imageData.height, {
                 inversionAttempts: 'dontInvert'
               });
 
+              console.log('QR code result:', code);
               if (code && code.data) {
                 const sn = code.data.trim();
+                console.log('SN extracted:', sn);
                 document.getElementById('productSN').value = sn;
                 toast('QR detected! SN: ' + sn, 'success');
               } else {
                 toast('No QR code found in image. Try another image.', 'error');
               }
+            } else {
+              console.log('jsQR not available');
+              toast('QR library not loaded. Try again.', 'error');
             }
           } catch (err) {
+            console.error('Error:', err);
             toast('Error processing image: ' + err.message, 'error');
           }
         };

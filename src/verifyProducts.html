@@ -98,6 +98,100 @@
     }
     .shake { animation: shake 0.5s ease; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+
+    /* Modal Popup */
+    .result-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.3s ease;
+    }
+    .result-modal.show { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      border: 1px solid var(--border);
+      animation: popUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    @keyframes popUp { 
+      from { opacity: 0; transform: scale(0.8) translateY(20px); } 
+      to { opacity: 1; transform: scale(1) translateY(0); } 
+    }
+
+    .modal-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: bounce 0.6s ease;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .modal-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .modal-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+
+    .modal-detail-item {
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .modal-detail-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.4rem;
+    }
+
+    .modal-detail-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -231,6 +325,22 @@
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Result Modal Popup -->
+  <div class="result-modal" id="resultModal">
+    <div class="modal-content">
+      <div class="modal-icon" id="modalIcon">✅</div>
+      <div class="modal-title" id="modalTitle">GENUINE PRODUCT</div>
+      <div class="modal-subtitle" id="modalSubtitle">This product is authentic and verified on the blockchain.</div>
+      
+      <div class="modal-details" id="modalDetails"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeResultModal()">Close</button>
+        <button class="btn btn-primary" onclick="scanAgainFromModal()">Scan Another</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="main-footer">
     <span>© 2026 ChainVerify — Fake Product Identification</span>
@@ -437,8 +547,6 @@
 
     // ─── Show Result ──────────────────────────────────────────────────────────
     function showResult(status, sn) {
-      const card = document.getElementById('resultCard');
-
       const cfg = {
         genuine: {
           icon: '✅', title: 'GENUINE PRODUCT',
@@ -458,41 +566,43 @@
       };
 
       const c = cfg[status] || cfg.unknown;
-      card.className = `result-card show ${status}`;
 
-      if (status === 'fake') {
-        card.classList.add('shake');
-        setTimeout(() => card.classList.remove('shake'), 600);
-      }
+      // Update modal
+      document.getElementById('modalIcon').textContent = c.icon;
+      document.getElementById('modalTitle').textContent = c.title;
+      document.getElementById('modalSubtitle').textContent = c.sub;
 
-      document.getElementById('resultIcon').textContent  = c.icon;
-      document.getElementById('resultTitle').textContent = c.title;
-      document.getElementById('resultSub').textContent   = c.sub;
-
-      document.getElementById('resultDetails').innerHTML = `
-        <div class="detail-item">
-          <div class="detail-label">Serial Number</div>
-          <div class="detail-value" style="font-family:monospace;font-size:0.82rem;">${sn}</div>
+      document.getElementById('modalDetails').innerHTML = `
+        <div class="modal-detail-item">
+          <div class="modal-detail-label">Serial Number</div>
+          <div class="modal-detail-value" style="font-family:monospace;">${sn}</div>
         </div>
-        <div class="detail-item">
-          <div class="detail-label">Status</div>
-          <div class="detail-value">${c.badge}</div>
+        <div class="modal-detail-item">
+          <div class="modal-detail-label">Status</div>
+          <div class="modal-detail-value">${c.badge}</div>
         </div>
-        <div class="detail-item">
-          <div class="detail-label">Verified At</div>
-          <div class="detail-value">${new Date().toLocaleString('en-IN')}</div>
+        <div class="modal-detail-item">
+          <div class="modal-detail-label">Verified At</div>
+          <div class="modal-detail-value">${new Date().toLocaleTimeString('en-IN')}</div>
         </div>
-        <div class="detail-item">
-          <div class="detail-label">Network</div>
-          <div class="detail-value">Ethereum (Local)</div>
+        <div class="modal-detail-item">
+          <div class="modal-detail-label">Network</div>
+          <div class="modal-detail-value">Ethereum</div>
         </div>
       `;
 
-      const extraDiv = document.getElementById('extraInfo');
-      extraDiv.style.display = 'none';
+      // Show modal with animation
+      const modal = document.getElementById('resultModal');
+      modal.classList.add('show');
+
+      // Add shake animation for fake products
+      if (status === 'fake') {
+        const content = modal.querySelector('.modal-content');
+        content.classList.add('shake');
+        setTimeout(() => content.classList.remove('shake'), 600);
+      }
 
       addToHistory(sn, status);
-      card.scrollIntoView({ behavior: 'smooth' });
 
       const toastMap = {
         genuine: ['Product is GENUINE! ✅', 'success'],
@@ -500,6 +610,15 @@
         unknown: ['Product not registered in ChainVerify.', 'warning']
       };
       toast(...toastMap[status]);
+    }
+
+    function closeResultModal() {
+      document.getElementById('resultModal').classList.remove('show');
+    }
+
+    function scanAgainFromModal() {
+      closeResultModal();
+      scanAgain();
     }
 
     // ─── Scan Again ───────────────────────────────────────────────────────────
